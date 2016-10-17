@@ -14,22 +14,24 @@ import javax.swing.Timer;
  */
 @SuppressWarnings("serial")
 public class Maze extends JComponent {
-	
-    private int gameTime = 0;
-    private Timer myTimer;
-	
+    
+    // Maze info
     private boolean corners[][], hWalls[][], vWalls[][];
     private boolean north=false, south=false, east=false, west=false;
-    private boolean play2=false;
-    
-    private int xLoc=0, yLoc=0, moveCounter=0, move2Counter=0;
-    private int xStart=0, yStart=0, x2Start=0, y2Start=0; 
-    private int size, selectedColor, selected2Color, modeSel=0;
+    private int xLoc=0, yLoc=0;
     private double xLen=0, length=0;
     
-    RectangleComponent us, us2;
-    KeyPressListener mover = new KeyPressListener();
-    
+    // Player info
+    private int Player1X=0, Player1Y=0, Player2X=0, Player2Y=0; 
+    private boolean play2=false;
+    private int size, selectedColor, selected2Color, modeSel=0;
+    Player us, us2;
+    PlayerMover mover = new PlayerMover();
+     
+     // Game complete info
+    private int gameTime = 0, moveCounter=0, move2Counter=0;
+    private Timer myTimer;
+     
     Maze(int diff, int col, int col2, int mode, int x) {
     	
         myTimer = new Timer(1000, new ActionListener() {
@@ -78,7 +80,7 @@ public class Maze extends JComponent {
                 vWalls[i][j] = true;
             }
         
-        yLoc = yStart= y2Start = rand(size);
+        yLoc = Player1Y= Player2Y = rand(size);
         corners[0][yLoc] = true;
         int direc = rand(4);
         char d = 0;
@@ -89,8 +91,20 @@ public class Maze extends JComponent {
                 case 2: d = 'e'; break;
                 case 3: d = 'w'; break;
             }
+            mazeDirection(d);
             
-            if (d == 'n') {
+            //if trapped, move to a another location to continue
+            if (trapped(xLoc, yLoc, size)) {
+                repositionMazeCreator();
+            }
+            direc = rand(4);
+        }
+        vWalls[xLoc][yLoc+1]=false;
+    }
+    
+    //move maze creator in given direction
+    public void mazeDirection(char d){
+        if (d == 'n') {
                 if (yLoc > 0 && !corners[xLoc][yLoc-1]) {
                     hWalls[xLoc+1][yLoc] = false;
                     yLoc--;
@@ -118,9 +132,11 @@ public class Maze extends JComponent {
                     corners[xLoc][yLoc]=true;
                 }
             }
-            
-            if (trapped(xLoc, yLoc, size)) {
-                int possX, possY;
+    }
+    
+    //if maze creator is trapped, move to another location to coninue
+    public void repositionMazeCreator(){
+        int possX, possY;
                 boolean exist=false;
                 while (!exist){
                     possY = rand(size);
@@ -131,12 +147,9 @@ public class Maze extends JComponent {
                         exist=true;
                     }
                 }
-            }
-            direc = rand(4);
-        }
-        vWalls[xLoc][yLoc+1]=false;
     }
 
+    //see if the maze creator is trapped
     public boolean trapped(int xLoc, int yLoc, int size) {
         if (yLoc != 0)
             north = corners[xLoc][yLoc-1];
@@ -209,34 +222,41 @@ public class Maze extends JComponent {
         //create the blackout and flashlight
         if (modeSel > 0) {
             Area a = new Area(new Rectangle2D.Double(0, 0, xLen, xLen));
-            if (modeSel == 1) {
-                a.subtract(new Area(new Ellipse2D.Double(((xStart - 5.5) * length) - 4 * length, ((yStart - 5.5) * length) - 4 * length, length * 20, length * 20)));
-            } 
-            else if (modeSel == 2) {
-                a.subtract(new Area(new Ellipse2D.Double(((xStart - 2.5) * length) - 2 * length, ((yStart - 2.5) * length) - 2 * length, length * 10, length * 10)));
-            } 
-            else {
-                a.subtract(new Area(new Ellipse2D.Double(((xStart - 1) * length) - length, ((yStart - 1) * length) - length, length * 5, length * 5)));
-            }
+                createBlackout(g2,a,Player1X,Player1Y);
             if (play2) {
-                if (modeSel == 1) 
-                    a.subtract(new Area(new Ellipse2D.Double(((x2Start - 5.5) * length) - 4 * length, ((y2Start - 5.5) * length) - 4 * length, length * 20, length * 20)));
-                else if (modeSel == 2) 
-                    a.subtract(new Area(new Ellipse2D.Double(((x2Start - 2.5) * length) - 2 * length, ((y2Start - 2.5) * length) - 2 * length, length * 10, length * 10)));
-                else 
-                    a.subtract(new Area(new Ellipse2D.Double(((x2Start - 1) * length) - length, ((y2Start - 1) * length) - length, length * 5, length * 5)));
+                createBlackout(g2, a, Player2X, Player2Y);
             }
             g2.fill(a);
         }
+        
         //create the players
-        us=new RectangleComponent(xStart, yStart, length, selectedColor);
+        us=new Player(Player1X, Player1Y, length, selectedColor);
         us.paintComponent(g);
         if (play2){
-            us2=new RectangleComponent(x2Start, y2Start, length, selected2Color);
+            us2=new Player(Player2X, Player2Y, length, selected2Color);
             us2.paintComponent(g);
         }
     }
-    class KeyPressListener implements KeyListener {
+    
+    //creates the blackout of the screen for the extreme modes
+    public void createBlackout(Graphics2D g2, Area a, int playerX, int playerY){
+        switch (modeSel) {
+            case 1:
+                a.subtract(new Area(new Ellipse2D.Double(((playerX - 5.5) * length) - 4 * length, ((playerY - 5.5) * length) - 4 * length, length * 20, length * 20)));
+                break;
+            case 2:
+                a.subtract(new Area(new Ellipse2D.Double(((playerX - 2.5) * length) - 2 * length, ((playerY - 2.5) * length) - 2 * length, length * 10, length * 10)));
+                break;
+            case 3:
+                a.subtract(new Area(new Ellipse2D.Double(((playerX - 1) * length) - length, ((playerY - 1) * length) - length, length * 5, length * 5)));
+                break;
+            default:
+                break;
+        }
+    }
+    
+    //moves the player after a direction is pressed
+    class PlayerMover implements KeyListener {
         @Override
         public void keyPressed(KeyEvent event) {
             if(event.getKeyCode() == KeyEvent.VK_ESCAPE){
@@ -258,29 +278,7 @@ public class Maze extends JComponent {
                     case 37: m = "w"; moveCounter++; break;
                     default: break;
                 }
-                switch(m){
-                    case "n": 
-                        if(!hWalls[xStart+1][yStart])
-                            yStart--;
-                        break;
-                    case "s": 
-                        if(!hWalls[xStart+1][yStart+1])
-                            yStart++;
-                        break;
-                    case "e": 
-                        if(!vWalls[xStart+1][yStart+1])
-                            xStart++;
-                        else if(xStart+1 == size) {
-                            getRootPane().getParent().setVisible(false);
-                            new MazeCompleted(moveCounter, -1, 0, gameTime);
-                        }
-                        break;
-                    case "w": 
-                        if(!vWalls[xStart][yStart+1])
-                            xStart--;
-                        break; 
-                    default: break;
-                }
+                    movePlayer(m,"");
             }
             else{
                 switch (event.getKeyCode()) {
@@ -294,52 +292,8 @@ public class Maze extends JComponent {
                     case 37: m = "w"; moveCounter++; break;
                     default: break;
                 }
-                switch(m2){
-                    case "n": 
-                        if(!hWalls[x2Start+1][y2Start])
-                            y2Start--;
-                        break;
-                    case "s": 
-                        if(!hWalls[x2Start+1][y2Start+1])
-                            y2Start++;
-                        break;
-                    case "e": 
-                        if(!vWalls[x2Start+1][y2Start+1])
-                            x2Start++;
-                        else if(x2Start+1 == size) {
-                            getRootPane().getParent().setVisible(false);
-                            new MazeCompleted(moveCounter, move2Counter, 2, gameTime);
-                        }
-                        break;
-                    case "w": 
-                        if(!vWalls[x2Start][y2Start+1])
-                            x2Start--;
-                        break; 
-                    default: break;
-                }
-                switch(m){
-                    case "n": 
-                        if(!hWalls[xStart+1][yStart])
-                            yStart--;
-                        break;
-                    case "s": 
-                        if(!hWalls[xStart+1][yStart+1])
-                            yStart++;
-                        break;
-                    case "e": 
-                        if(!vWalls[xStart+1][yStart+1])
-                            xStart++;
-                        else if(xStart+1 == size) {
-                            getRootPane().getParent().setVisible(false);
-                            new MazeCompleted(moveCounter, move2Counter, 1, gameTime);
-                        }
-                        break;
-                    case "w": 
-                        if(!vWalls[xStart][yStart+1])
-                            xStart--;
-                        break; 
-                    default: break;
-                }
+                movePlayer(m, "");
+                movePlayer("",m2);
             }
            repaint();
         }
@@ -347,5 +301,59 @@ public class Maze extends JComponent {
         
         public void keyTyped(KeyEvent event) {}
         public void keyReleased(KeyEvent event) {}
+    }
+    
+    //move player in the desired direction if allowed
+    public void movePlayer(String m, String m2){
+        if("".equals(m2)){
+            switch(m){
+                case "n": 
+                    if(!hWalls[Player1X+1][Player1Y])
+                        Player1Y--;
+                    break;
+                case "s": 
+                    if(!hWalls[Player1X+1][Player1Y+1])
+                        Player1Y++;
+                    break;
+                case "e": 
+                    if(!vWalls[Player1X+1][Player1Y+1])
+                        Player1X++;
+                    else if(Player1X+1 == size) {
+                        getRootPane().getParent().setVisible(false);
+                        new MazeCompleted(moveCounter, -1, 0, gameTime);
+                    }
+                    break;
+                case "w": 
+                    if(!vWalls[Player1X][Player1Y+1])
+                        Player1X--;
+                    break; 
+                default: break;
+            }
+        }
+        if ("".equals(m)){
+            switch(m2){
+                    case "n": 
+                        if(!hWalls[Player2X+1][Player2Y])
+                            Player2Y--;
+                        break;
+                    case "s": 
+                        if(!hWalls[Player2X+1][Player2Y+1])
+                            Player2Y++;
+                        break;
+                    case "e": 
+                        if(!vWalls[Player2X+1][Player2Y+1])
+                            Player2X++;
+                        else if(Player2X+1 == size) {
+                            getRootPane().getParent().setVisible(false);
+                            new MazeCompleted(moveCounter, move2Counter, 2, gameTime);
+                        }
+                        break;
+                    case "w": 
+                        if(!vWalls[Player2X][Player2Y+1])
+                            Player2X--;
+                        break; 
+                    default: break;
+                }
+        }
     }
 }

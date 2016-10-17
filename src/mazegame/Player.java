@@ -10,12 +10,13 @@ import javax.swing.JComponent;
  * This class creates the rectangle that marks the current location of the player in the maze.
  * @author Kirsten Baker, Todd Locker
  */
+
 @SuppressWarnings("serial")
-public class RectangleComponent extends JComponent {
+public class Player extends JComponent {
     private final int xStart, yStart, selectedColor;
     private final double length;
 
-    public RectangleComponent(int xS, int yS, double l, int sColor){
+    public Player(int xS, int yS, double l, int sColor){
         xStart = xS; yStart = yS;
         length = l;
         selectedColor = sColor;

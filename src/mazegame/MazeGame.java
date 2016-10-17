@@ -18,7 +18,8 @@ public class MazeGame {
         difficulty.setResizable(false);
         difficulty.setVisible(true);
     }
-public static void main(String[] args) {
+    
+    public static void main(String[] args) {
         MazeGame game= new MazeGame();
     }
 }
